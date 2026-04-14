@@ -6,14 +6,16 @@ A Claude Code skill that generates comprehensive, research-backed interview prep
 
 Running `/interview-prep <company> <role>` will:
 
-1. **Ask** your preferred programming language
-2. **Research** the company's interview process across 20+ sources in parallel (Glassdoor, Blind, LeetCode, Reddit, engineering blogs, levels.fyi, Prepfully, and more)
-3. **Generate** a complete prep package with:
-   - Detailed report of real questions asked by candidates (with sources and dates)
+1. **Ask** your preferred programming language, optional location, and optional job description
+2. **Research** the company's interview process across 20+ sources in parallel (Glassdoor, Blind, LeetCode, Reddit, engineering blogs, levels.fyi, Prepfully, and more) — tailored to your location and JD if provided
+3. **Identify** the company's actual interview rounds (not a generic template)
+4. **Generate** a complete prep package with:
+   - Detailed report of real questions organized by the company's actual rounds (with sources and dates)
+   - Exercises for each confirmed round type (coding, debugging, integration, system design, API design, behavioral, etc.)
    - Coding exercises with starter code, tests, hints, and full solutions
-   - System design exercises with frameworks, sample answers, and company-specific angles
-   - Behavioral prep with STAR templates and company culture insights
    - A week-by-week study plan with time estimates
+   - JD alignment mapping (if a job description was provided)
+   - Location-specific notes (if a location was provided)
 
 ## Quick Start
 
@@ -26,6 +28,8 @@ Running `/interview-prep <company> <role>` will:
 
 ## Output Structure
 
+Exercise folders are **dynamic** — they match the company's actual interview rounds, not a fixed template.
+
 ```
 reports/{company}_{role}/
 ├── README.md                              # Overview + how to use
@@ -33,12 +37,12 @@ reports/{company}_{role}/
 ├── plan.md                                # Week-by-week study plan
 └── exercises/
     ├── README.md                          # Exercise index with difficulty + order
-    ├── coding/
+    ├── {round_slug_1}/                    # e.g., coding/, debugging/, integration/
     │   ├── 01_problem_name.{ext}          # Starter code + tests
     │   ├── 01_problem_name_solution.{ext} # Solution + follow-ups
     │   └── ...
-    ├── system_design/
-    │   ├── sd_01_topic.md                 # Full SD exercise with framework
+    ├── {round_slug_2}/                    # e.g., system_design/, api_design/
+    │   ├── 01_topic.md                    # Full exercise with framework
     │   └── ...
     └── behavioral/
         └── behavioral_prep.md             # Questions + STAR frameworks
@@ -75,7 +79,7 @@ Two example reports are included:
 
 ## How It Works
 
-The skill launches 4 parallel research agents that search:
+The skill launches 3 parallel research agents that search:
 - Interview databases (Glassdoor, Blind, levels.fyi)
 - Community sources (Prepfully, Reddit, InterviewQuery, DataLemur)
 - Company engineering blogs and tech stack
@@ -94,4 +98,7 @@ The skill accepts two arguments:
 - **Company name** — any company (researched dynamically)
 - **Role** — e.g., "senior backend engineer", "staff fullstack", "junior frontend"
 
-Language is chosen interactively and determines the coding exercise file format.
+You'll be asked interactively for:
+- **Language** — Python, Java, JavaScript, Go, or other (determines coding exercise file format)
+- **Location** (optional) — tailors research to a specific country/office (e.g., interview process differences, local culture)
+- **Job description** (optional) — paste a JD to get exercises prioritized by its requirements and a JD alignment section in the report
