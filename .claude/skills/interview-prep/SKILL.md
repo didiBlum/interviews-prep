@@ -7,54 +7,61 @@ disable-model-invocation: true
 
 Generate a comprehensive interview preparation package for **$0** for the **$1** role.
 
-## Step 0: Ask for Programming Language
+## Step 1: Research Phase + User Questions — ALL IN PARALLEL
 
-Before starting research, use AskUserQuestion to ask: "What programming language are you most comfortable with? (This will be used to generate tailored coding exercises)"
+**CRITICAL: Launch ALL 3 research agents AND AskUserQuestion in a SINGLE message (4 tool calls). The questions run while agents research — no wasted time waiting.**
 
-Wait for their response. Store the answer as `{lang}`.
+Ask the user via AskUserQuestion (up to 3 questions in one call):
 
-## Step 1: Research Phase — PARALLEL DEEP DIVE
+1. "What programming language are you most comfortable with?" — Options: Python, Java, JavaScript, Go (+ Other). Store as `{lang}`.
+2. "Would you like to tailor this to a specific country/location?" — Options: "No, keep it general", "Yes (please specify)" with Other for free text. Store as `{location}` or empty.
+3. "Do you have a specific job description you'd like to incorporate?" — Options: "No, use general research", "Yes, I'll paste it". If yes, wait for their paste and store as `{jd}`.
 
-**CRITICAL: Launch ALL 4 agents below in a SINGLE message with 4 Agent tool calls. This is what makes them run in parallel. Do NOT launch them one at a time.**
+If `{location}` is provided, append it to ALL search queries in the research agents (e.g., `$0 $1 interview questions glassdoor {location}`). This surfaces location-specific interview experiences, office culture, and regional process differences.
 
-### Agent 1: Interview Databases (Glassdoor, Blind, levels.fyi)
+If `{jd}` is provided, extract key responsibilities, required skills, and technologies from it. Use these to:
+- Prioritize coding exercises that match the JD's technical requirements
+- Tailor system design questions to the JD's domain focus
+- Add a "JD Alignment" section to the report mapping exercises to JD requirements
 
-Launch an Agent (subagent_type: "general-purpose") with this prompt:
+### Agent 1: Interview Questions (Glassdoor, Blind, LeetCode, OA platforms)
 
-> Research interview questions for $0 $1 role from interview databases. Do ALL of these searches and fetch the top 2-3 result pages for each:
+Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this prompt:
+
+> Research interview questions for $0 $1 role{if location: in {location}}. Do these searches and fetch the top 2-3 result pages for each:
 >
-> - Search: `$0 $1 interview questions glassdoor`
-> - Search: `$0 interview questions glassdoor site:glassdoor.com`
-> - Search: `$0 $1 interview blind teamblind`
+> - Search: `$0 $1 interview questions glassdoor site:glassdoor.com {location}`
+> - Search: `$0 $1 interview blind teamblind {location}`
 > - Search: `$0 $1 interview questions levels.fyi`
-> - Search: `$0 interview glassdoor software engineer specific questions 2024 2025`
-> - Search: `$0 interview Tel Aviv senior software engineer questions glassdoor 2024 2025`
+> - Search: `$0 $1 online assessment OA leetcode questions`
+> - Search: `$0 interview Codility OR CoderPad OR HackerRank test`
+>
+> If {location} was provided, also search: `$0 {location} office interview process`
+>
+> If you find references to specific platforms (Codility, CoderPad) or LeetCode problems, do follow-up searches for those.
 >
 > Return a structured summary:
 > - SPECIFIC coding questions (with source URL, date, difficulty)
 > - SPECIFIC system design questions (with source URL, date)
 > - SPECIFIC behavioral questions (with source URL)
 > - Interview process details (stages, timeline, platform used)
-> - Any take-home / OA details
+> - Online assessment / take-home details
+> - LeetCode problem numbers referenced
 >
 > Be thorough. Fetch aggressively. Never fabricate questions.
 
-### Agent 2: Community Sources (Prepfully, InterviewQuery, Reddit, InterviewPal)
+### Agent 2: Community Sources (Prepfully, Reddit, InterviewQuery)
 
-Launch an Agent (subagent_type: "general-purpose") with this prompt:
+Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this prompt:
 
-> Research interview questions for $0 $1 role from community sources. Do ALL of these searches and fetch the top 2-3 result pages for each:
+> Research interview questions for $0 $1 role{if location: in {location}} from community sources. Do these searches and fetch the top 2-3 result pages for each:
 >
 > - Search: `$0 $1 interview questions prepfully`
-> - Fetch: `https://prepfully.com/interview-questions/$0` (try lowercase/hyphenated company name)
-> - Fetch: `https://prepfully.com/interview-questions/$0/backend-engineer` (adjust role slug)
 > - Search: `$0 $1 interview questions interviewquery`
-> - Search: `$0 coding interview questions datalemur`
-> - Fetch: `https://datalemur.com/blog/$0-sql-interview-questions` (try lowercase/hyphenated)
-> - Search: `$0 $1 interview experience reddit cscareerquestions`
-> - Search: `"$0" "$1" interview "I was asked" OR "they asked" OR "the question was"`
-> - Search: `"$0" interview experience "coding round" OR "system design" OR "take home"`
-> - Fetch: `https://www.interviewpal.com/questions/$0-interview-questions` (try lowercase/hyphenated)
+> - Search: `$0 $1 interview experience reddit cscareerquestions {location}`
+> - Search: `$0 system design interview question design OR scale OR architecture`
+>
+> If {location} was provided, also search: `$0 $1 interview {location} experience reddit`
 >
 > Return a structured summary:
 > - SPECIFIC coding questions (with source URL, date, difficulty)
@@ -66,18 +73,22 @@ Launch an Agent (subagent_type: "general-purpose") with this prompt:
 
 ### Agent 3: Company Engineering & Tech Stack
 
-Launch an Agent (subagent_type: "general-purpose") with this prompt:
+Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this prompt:
 
-> Research the engineering culture and tech stack for $0. Do ALL of these searches and fetch the top result pages:
+> Research the engineering culture and tech stack for $0{if location: , specifically the {location} office}. Do these searches and fetch the top result pages:
 >
 > - Search: `$0 engineering blog`
-> - Search: `$0 engineering blog hiring interview`
 > - Search: `$0 tech stack architecture infrastructure`
-> - Search: `$0 $1 job description responsibilities`
-> - Fetch the company's engineering blog homepage if found
-> - Fetch any tech stack pages found (e.g. himalayas.app, stackshare.io)
+> - Search: `$0 $1 job description responsibilities {location}`
 > - Search: `$0 $1 interview process 2025 OR 2026`
-> - Search: `$0 interview loop rounds what to expect`
+>
+> If {location} was provided, also search: `$0 {location} office engineering team`
+>
+> If {jd} was provided, here is the job description to incorporate:
+> ```
+> {jd}
+> ```
+> Extract: key technologies, required skills, team focus areas, and specific responsibilities. Include these in your summary.
 >
 > Return a structured summary:
 > - Complete tech stack: Backend, Databases, Infrastructure, Frontend
@@ -86,33 +97,13 @@ Launch an Agent (subagent_type: "general-purpose") with this prompt:
 > - Interview process from official sources
 > - Notable engineering blog topics
 
-### Agent 4: Niche Sources & Deep Dives
-
-Launch an Agent (subagent_type: "general-purpose") with this prompt:
-
-> Research interview questions for $0 $1 role from niche sources. Do ALL of these searches and fetch result pages:
->
-> - Search: `$0 online assessment OA leetcode questions`
-> - Search: `$0 interview questions leetcode`
-> - Search: `$0 interview Codility OR CoderPad OR HackerRank test`
-> - Search: `$0 system design interview question design OR scale OR architecture`
-> - Search: `$0 interview question implement cache OR design notification OR sort table`
-> - Search: `$0 engineering blog microservices kafka elasticsearch database`
->
-> If you find references to specific platforms (Codility, CoderPad), do follow-up searches.
-> If specific LeetCode problems are mentioned, search for those too.
->
-> Return a structured summary:
-> - SPECIFIC coding questions (with source URL, date, difficulty)
-> - SPECIFIC system design questions (with source URL, date)
-> - Online assessment / take-home details
-> - LeetCode problem numbers referenced
->
-> Be thorough. Fetch aggressively. Never fabricate questions.
-
 ## Step 2: Generate Output Directory
 
-After ALL 4 agents return, merge and deduplicate findings. Create the full output directory:
+After ALL 3 agents return and the user has answered the language question, merge and deduplicate findings. Create the full output directory.
+
+**CRITICAL: Maximize parallelism when writing files. Use multiple Write tool calls in a SINGLE message for all independent files. Batch all coding exercise files + solution files + system design files + behavioral prep + READMEs + report + plan into as few messages as possible. Do NOT write files one at a time sequentially.**
+
+Directory structure:
 
 ```
 reports/{company_snake_case}_{role_snake_case}/
@@ -149,7 +140,9 @@ Full interview prep report with these sections:
    - If few questions found, say so honestly with count.
 4. **Topics & Patterns** — DS/algorithms tested, SD themes, behavioral themes, unique aspects.
 5. **Tech Stack** — Backend, Databases, Infrastructure, Frontend. Architecture patterns.
-6. **Sources** — All URLs as markdown links.
+6. **JD Alignment** (only if `{jd}` was provided) — Table mapping each JD requirement to specific exercises and prep activities. Highlight gaps where no exercise covers a JD requirement.
+7. **Location Notes** (only if `{location}` was provided) — Location-specific details: office culture, local interview process differences, team composition at that location.
+8. **Sources** — All URLs as markdown links.
 
 ### plan.md
 
@@ -306,5 +299,6 @@ Claude will:
 - **Always attribute**: every question should have a source link.
 - **Recency matters**: prioritize 2024-2026 data. Note dates.
 - **Fetch aggressively**: real questions are in page content, not snippets.
-- **ALL 4 research agents MUST be launched in a SINGLE message** — this is what makes them parallel.
-- Present the full report content directly to the user after saving all files.
+- **ALL 3 research agents + AskUserQuestion MUST be launched in a SINGLE message** — this is what makes them parallel.
+- **ALL exercise files MUST be written in parallel** — batch all independent Write calls into as few messages as possible. Never write files one-by-one.
+- After saving all files, tell the user the report is ready and show only the **TL;DR** section from report.md. Do NOT re-output the full report.
