@@ -7,9 +7,7 @@ disable-model-invocation: true
 
 Generate a comprehensive interview preparation package for **$0** for the **$1** role.
 
-## Step 1: Research Phase + User Questions — ALL IN PARALLEL
-
-**CRITICAL: Launch ALL 3 research agents AND AskUserQuestion in a SINGLE message (4 tool calls). The questions run while agents research — no wasted time waiting.**
+## Step 1: Ask the User
 
 Ask the user via AskUserQuestion (up to 3 questions in one call):
 
@@ -17,12 +15,18 @@ Ask the user via AskUserQuestion (up to 3 questions in one call):
 2. "Would you like to tailor this to a specific country/location?" — Options: "No, keep it general", "Yes (please specify)" with Other for free text. Store as `{location}` or empty.
 3. "Do you have a specific job description you'd like to incorporate?" — Options: "No, use general research", "Yes, I'll paste it". If yes, wait for their paste and store as `{jd}`.
 
-If `{location}` is provided, append it to ALL search queries in the research agents (e.g., `$0 $1 interview questions glassdoor {location}`). This surfaces location-specific interview experiences, office culture, and regional process differences.
+**Wait for the user's answers before proceeding to Step 2.**
 
-If `{jd}` is provided, extract key responsibilities, required skills, and technologies from it. Use these to:
-- Prioritize coding exercises that match the JD's technical requirements
-- Tailor system design questions to the JD's domain focus
-- Add a "JD Alignment" section to the report mapping exercises to JD requirements
+## Step 2: Research Phase — ALL 3 AGENTS IN PARALLEL
+
+**CRITICAL: Launch ALL 3 research agents in a SINGLE message (3 tool calls). They must be in one message for true parallelism.**
+
+Incorporate the user's answers into agent queries:
+- If `{location}` is provided, append it to ALL search queries (e.g., `$0 $1 interview questions glassdoor {location}`). This surfaces location-specific interview experiences, office culture, and regional process differences.
+- If `{jd}` is provided, extract key responsibilities, required skills, and technologies from it. Use these to:
+  - Prioritize coding exercises that match the JD's technical requirements
+  - Tailor system design questions to the JD's domain focus
+  - Add a "JD Alignment" section to the report mapping exercises to JD requirements
 
 ### Agent 1: Interview Questions (Glassdoor, Blind, LeetCode, OA platforms)
 
@@ -97,9 +101,9 @@ Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this pr
 > - Interview process from official sources
 > - Notable engineering blog topics
 
-## Step 2: Identify Interview Rounds
+## Step 3: Identify Interview Rounds
 
-After ALL 3 agents return and the user has answered, **first identify the company's actual interview rounds** from the research. Do NOT assume a fixed structure. Different companies use different rounds.
+After ALL 3 agents return, **first identify the company's actual interview rounds** from the research. Do NOT assume a fixed structure. Different companies use different rounds.
 
 Common round types (use only what the research confirms):
 
@@ -121,7 +125,7 @@ Common round types (use only what the research confirms):
 
 **Create exercises ONLY for rounds that the research confirms exist for this company + role.** If the company has a "Bug Bash" round, create debugging exercises. If they have an "Integration" round, create API integration exercises. Don't create system design exercises if the company doesn't have that round.
 
-## Step 3: Generate Output Directory
+## Step 4: Generate Output Directory
 
 **CRITICAL: Maximize parallelism when writing files. Use multiple Write tool calls in a SINGLE message for all independent files. Do NOT write files one at a time sequentially.**
 
