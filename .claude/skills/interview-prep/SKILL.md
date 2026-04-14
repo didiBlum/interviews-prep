@@ -53,6 +53,7 @@ Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this pr
 > - LeetCode problem numbers referenced
 >
 > Be thorough. Fetch aggressively. Never fabricate questions.
+> Output ONLY the structured summary — no preamble, no conversational intro, no "Here is what I found."
 
 ### Agent 2: Community Sources (Prepfully, Reddit, InterviewQuery)
 
@@ -74,6 +75,7 @@ Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this pr
 > - Any take-home / OA details
 >
 > Be thorough. Fetch aggressively. Never fabricate questions.
+> Output ONLY the structured summary — no preamble, no conversational intro, no "Here is what I found."
 
 ### Agent 3: Company Engineering & Tech Stack
 
@@ -100,6 +102,8 @@ Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this pr
 > - Engineering culture (deploy frequency, team structure, values)
 > - Interview process from official sources
 > - Notable engineering blog topics
+>
+> Output ONLY the structured summary — no preamble, no conversational intro, no "Here is what I found."
 
 ## Step 3: Identify Interview Rounds
 
@@ -125,9 +129,11 @@ Common round types (use only what the research confirms):
 
 **Create exercises ONLY for rounds that the research confirms exist for this company + role.** If the company has a "Bug Bash" round, create debugging exercises. If they have an "Integration" round, create API integration exercises. Don't create system design exercises if the company doesn't have that round.
 
+**Thin data fallback**: If a round is confirmed but fewer than 2 specific questions were found for it, generate 2-3 high-probability exercises based on the company's tech stack and the typical industry standard for that round type. Mark these clearly as **"Estimated — based on {company}'s tech stack and typical {round_type} patterns"** so the user knows they aren't sourced from candidate reports.
+
 ## Step 4: Generate Output Directory
 
-**CRITICAL: Maximize parallelism when writing files. Use multiple Write tool calls in a SINGLE message for all independent files. Do NOT write files one at a time sequentially.**
+**Write order**: First write `report.md`, `plan.md`, `README.md`, and `exercises/README.md` in a single parallel batch — these are the "map" that must always be complete. Then write exercise files in batches of up to 3. This ensures the report and index are never truncated even if exercise generation requires multiple messages.
 
 Directory structure (round folders are DYNAMIC — based on Step 2):
 
@@ -367,10 +373,10 @@ Share your solution and ask for feedback. Claude will:
 
 - **ROUND-DRIVEN STRUCTURE**: Exercise folders and report sections must match the company's ACTUAL interview rounds — never force a generic coding/SD/behavioral split.
 - **SPECIFICITY OVER GENERALITY**: Real questions with sources, not generic advice.
-- **NEVER fabricate questions**. Only include questions actually found in sources.
-- **Always attribute**: every question should have a source link.
-- **Recency matters**: prioritize 2024-2026 data. Note dates.
+- **NEVER fabricate questions**. Only include questions actually found in sources. Estimated exercises (from the thin-data fallback) must be clearly labeled.
+- **Always attribute**: every sourced question should have a source link.
+- **Recency weighting**: Prioritize data from the last 18 months. If a question is older than 3 years, label it as **"Historical — {year}"** rather than listing it alongside current data. Never treat a 2018 Glassdoor post the same as a 2025 one.
 - **Fetch aggressively**: real questions are in page content, not snippets.
-- **ALL 3 research agents + AskUserQuestion MUST be launched in a SINGLE message** — this is what makes them parallel.
-- **ALL exercise files MUST be written in parallel** — batch all independent Write calls into as few messages as possible. Never write files one-by-one.
+- **ALL 3 research agents MUST be launched in a SINGLE message** — this is what makes them parallel.
+- **Write order**: report + plan + READMEs first (one batch), then exercises in batches of up to 3. Never write all files in one message.
 - After saving all files, tell the user the report is ready and show only the **TL;DR** section from report.md. Do NOT re-output the full report.
