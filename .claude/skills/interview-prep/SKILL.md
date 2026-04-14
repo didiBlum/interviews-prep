@@ -97,13 +97,35 @@ Launch an Agent (subagent_type: "general-purpose", model: "sonnet") with this pr
 > - Interview process from official sources
 > - Notable engineering blog topics
 
-## Step 2: Generate Output Directory
+## Step 2: Identify Interview Rounds
 
-After ALL 3 agents return and the user has answered the language question, merge and deduplicate findings. Create the full output directory.
+After ALL 3 agents return and the user has answered, **first identify the company's actual interview rounds** from the research. Do NOT assume a fixed structure. Different companies use different rounds.
 
-**CRITICAL: Maximize parallelism when writing files. Use multiple Write tool calls in a SINGLE message for all independent files. Batch all coding exercise files + solution files + system design files + behavioral prep + READMEs + report + plan into as few messages as possible. Do NOT write files one at a time sequentially.**
+Common round types (use only what the research confirms):
 
-Directory structure:
+| Round Type | Slug | Description |
+|-----------|------|-------------|
+| Online Assessment | `online_assessment` | HackerRank/Codility/CodeSignal timed test |
+| Coding | `coding` | Live coding — algorithms, data structures, implementation |
+| Practical Coding | `practical_coding` | Business-logic-heavy coding, production-quality code |
+| Bug Bash / Debugging | `debugging` | Fix bugs in an unfamiliar codebase |
+| Integration | `integration` | Call real APIs, parse docs, integrate into existing code |
+| System Design | `system_design` | Architecture, distributed systems, database design |
+| API Design | `api_design` | Design REST/GraphQL APIs, HTTP semantics, versioning |
+| Take-Home Project | `take_home` | Multi-hour project done asynchronously |
+| Pair Programming | `pair_programming` | Code together with interviewer on a feature |
+| Domain-Specific | `domain_{name}` | SQL, ML, data pipelines, mobile, etc. |
+| Behavioral | `behavioral` | Culture fit, STAR stories, values alignment |
+| Presentation | `presentation` | Present past work or solve a problem live (Staff+) |
+| Hiring Manager | `hiring_manager` | Career goals, team fit, leadership |
+
+**Create exercises ONLY for rounds that the research confirms exist for this company + role.** If the company has a "Bug Bash" round, create debugging exercises. If they have an "Integration" round, create API integration exercises. Don't create system design exercises if the company doesn't have that round.
+
+## Step 3: Generate Output Directory
+
+**CRITICAL: Maximize parallelism when writing files. Use multiple Write tool calls in a SINGLE message for all independent files. Do NOT write files one at a time sequentially.**
+
+Directory structure (round folders are DYNAMIC — based on Step 2):
 
 ```
 reports/{company_snake_case}_{role_snake_case}/
@@ -112,18 +134,18 @@ reports/{company_snake_case}_{role_snake_case}/
 ├── plan.md                # Study plan with time estimates
 ├── exercises/
 │   ├── README.md          # Exercise index with difficulty + recommended order
-│   ├── coding/
-│   │   ├── 01_problem_name.{ext}           # Starter code + tests
-│   │   ├── 01_problem_name_solution.{ext}  # Solution
-│   │   ├── 02_problem_name.{ext}
-│   │   ├── 02_problem_name_solution.{ext}
+│   ├── {round_slug_1}/    # e.g., practical_coding/
+│   │   ├── 01_problem_name.{ext}
+│   │   ├── 01_problem_name_solution.{ext}
 │   │   └── ...
-│   ├── system_design/
-│   │   ├── sd_01_topic_name.md             # Full SD exercise
-│   │   ├── sd_02_topic_name.md
+│   ├── {round_slug_2}/    # e.g., debugging/
+│   │   ├── 01_exercise_name.md
 │   │   └── ...
-│   └── behavioral/
-│       └── behavioral_prep.md              # All behavioral questions + STAR frameworks
+│   ├── {round_slug_3}/    # e.g., system_design/
+│   │   ├── 01_topic_name.md
+│   │   └── ...
+│   └── {round_slug_N}/    # e.g., behavioral/
+│       └── behavioral_prep.md
 ```
 
 ### report.md
@@ -131,22 +153,20 @@ reports/{company_snake_case}_{role_snake_case}/
 Full interview prep report with these sections:
 
 1. **TL;DR** — 3-4 sentences: stages, timeline, difficulty, the single most important thing to know.
-2. **Interview Process** — Table: Stage | Format | Duration | What to Expect. Include timeline, platform.
-3. **Actual Questions Reported by Candidates** — The core section. Organized by:
-   - Coding Questions (table: question, difficulty, LC equivalent, round, source, date)
-   - System Design Questions (table: question, scope, source, date)
-   - Behavioral Questions (list with source)
-   - Take-Home / OA details
-   - If few questions found, say so honestly with count.
-4. **Topics & Patterns** — DS/algorithms tested, SD themes, behavioral themes, unique aspects.
+2. **Interview Process** — Table: Stage | Format | Duration | What to Expect. Include timeline, platform. This table should reflect the ACTUAL rounds this company uses — not a generic template.
+3. **Actual Questions Reported by Candidates** — The core section. Organize by the company's actual rounds (NOT by a fixed coding/SD/behavioral split). Each round gets its own subsection with:
+   - Table of specific questions (with source URL, date, difficulty)
+   - What this round evaluates
+   - If few questions found for a round, say so honestly with count.
+4. **Topics & Patterns** — Per round: what skills, patterns, and knowledge areas are tested. Include anything unique to this company's process.
 5. **Tech Stack** — Backend, Databases, Infrastructure, Frontend. Architecture patterns.
-6. **JD Alignment** (only if `{jd}` was provided) — Table mapping each JD requirement to specific exercises and prep activities. Highlight gaps where no exercise covers a JD requirement.
-7. **Location Notes** (only if `{location}` was provided) — Location-specific details: office culture, local interview process differences, team composition at that location.
+6. **JD Alignment** (only if `{jd}` was provided) — Table mapping each JD requirement to specific exercises and prep activities.
+7. **Location Notes** (only if `{location}` was provided) — Location-specific details: office culture, local process differences.
 8. **Sources** — All URLs as markdown links.
 
 ### plan.md
 
-A concrete study plan with time estimates. Structure:
+A concrete study plan organized by the company's actual interview rounds:
 
 ```markdown
 # Interview Prep Plan: $0 $1
@@ -154,65 +174,95 @@ A concrete study plan with time estimates. Structure:
 ## Overview
 - Total estimated prep time: X hours
 - Recommended timeline: X days/weeks
+- Interview rounds: {list the actual rounds}
 - Priority order: what to study first
 
 ## Week-by-Week Plan
 
-### Week 1: Coding Fundamentals
+### Week 1: {Most important round type}
 | Day | Activity | Time | Details |
 |-----|----------|------|---------|
-| 1 | Exercise 01: {name} | 1.5h | 1h solve + 0.5h review solution & edge cases |
-| 1 | Exercise 02: {name} | 1.5h | 1h solve + 0.5h review |
-| 2 | ... | ... | ... |
-
-### Week 2: System Design
-| Day | Activity | Time | Details |
-|-----|----------|------|---------|
-| 1 | SD Exercise 01: {name} | 2h | 1h self-attempt + 1h study reference answer |
+| 1 | Exercise 01: {name} | Xh | ... |
 | ... | ... | ... | ... |
 
-### Week 3: Behavioral + Mock
-| Day | Activity | Time | Details |
-|-----|----------|------|---------|
-| 1 | Prepare STAR stories | 2h | Write out 5 stories covering ownership, failure, conflict |
-| 2 | Mock interview practice | 1.5h | Time yourself: 45min coding + debrief |
-| ... | ... | ... | ... |
+### Week 2: {Next round type}
+...
+
+### Week N: Mock Interviews + Polish
+...
 
 ## Readiness Checklist
-- [ ] Can solve all coding exercises within time limit
-- [ ] Can articulate system design for each SD question (whiteboard 45 min)
-- [ ] Have 5+ STAR stories covering all behavioral themes
+(One checklist item per round — dynamically generated)
+- [ ] {Round-specific readiness criteria}
 - [ ] Can explain company's tech stack and architecture
 - [ ] Have used the product and formed opinions about it
 - [ ] Can answer "Why $0?" authentically
 ```
 
 Time estimates per exercise type:
-- Coding exercise: **1h solving + 30min reviewing solution + 30min practicing clean code & edge cases = 2h**
-- System design exercise: **1h self-attempt + 1h studying reference answer + 30min practicing verbal walkthrough = 2.5h**
+- Coding exercise (any type): **1h solving + 30min reviewing solution + 30min edge cases = 2h**
+- Debugging exercise: **1h practice + 30min studying methodology = 1.5h**
+- Integration exercise: **1h practice + 30min API doc reading drill = 1.5h**
+- System design exercise: **1h self-attempt + 1h studying reference + 30min verbal walkthrough = 2.5h**
+- API design exercise: **1h self-attempt + 1h studying reference = 2h**
 - Behavioral prep: **2h total** (writing STAR stories + practicing delivery)
 - Company research: **1-2h** (using product, reading eng blog)
 
-### exercises/coding/
+### Exercise Templates By Round Type
 
-For EACH specific coding question found in the report, create an exercise file in `{lang}`. Each file:
+**Use the template that matches each round. If the company has a round not listed here, create an appropriate exercise format for it.**
+
+#### Coding rounds (coding, practical_coding, online_assessment)
+
+For EACH specific question found, create an exercise file in `{lang}`:
 
 1. **Problem statement** as a docstring/comment — clear, self-contained (derived from real interview question)
 2. **Starter code** — function signature(s) with types, `# TODO` markers
 3. **Test cases** — at least 5 tests (including edge cases) runnable with `pytest` / language test framework
-4. **Hints** — 3 progressive hints as comments: `# HINT 1: ...`, `# HINT 2: ...`, `# HINT 3: ...`
+4. **Hints** — 3 progressive hints: `# HINT 1: ...`, `# HINT 2: ...`, `# HINT 3: ...`
 5. **Complexity targets** — what time/space complexity the interviewer expects
 
 Separate solution file with:
 1. Clean, well-commented solution
 2. Complexity analysis
-3. **Common interviewer follow-ups** — "what if the input is very large?", "how would you parallelize this?"
-4. **What interviewers look for** — clean code practices, variable naming, edge case handling, testing approach
+3. **Common interviewer follow-ups**
+4. **What interviewers look for** — clean code, naming, edge cases, testing
 5. Alternative approaches with tradeoffs
 
-### exercises/system_design/
+#### Debugging rounds (debugging, bug_bash)
 
-For EACH system design question, create a markdown file with:
+For EACH confirmed debugging scenario, create a markdown exercise:
+
+1. **Round format** — What to expect (duration, tools allowed, codebase type)
+2. **Confirmed codebases used** — Which OSS projects appear in this round
+3. **Confirmed bug types** — Categorized list of bugs candidates encountered
+4. **Debugging methodology drill** — Step-by-step approach the interviewer evaluates:
+   - How to read unfamiliar code quickly
+   - How to reproduce from a failing test
+   - When to use print vs. debugger vs. stack trace
+   - How to communicate your reasoning
+5. **Practice exercises** — 3-5 practice drills:
+   - Clone a specific OSS repo, find a real bug from its git history, fix it
+   - Each with: repo URL, commit to checkout, what to look for, time limit
+6. **Common mistakes** — What weak candidates do wrong
+7. **What interviewers look for** — Systematic approach over speed, hypothesis-driven debugging
+
+#### Integration rounds (integration)
+
+For EACH confirmed integration scenario, create a markdown exercise:
+
+1. **Round format** — Duration, what's provided, what's allowed (docs, internet)
+2. **Skills tested** — HTTP calls, JSON parsing, reading unfamiliar API docs, file I/O
+3. **Practice exercises** — 3-5 drills:
+   - Call a real public API (e.g., Stripe test mode, GitHub API), parse response, store results
+   - Each with: API to use, task description, time limit, expected deliverable
+4. **What makes this round unique** — "0% LeetCode, 100% on-the-job skills"
+5. **Common mistakes** — Not reading docs carefully, over-engineering, not testing
+6. **Tips from candidates** — Speed of doc reading matters as much as coding speed
+
+#### System Design rounds (system_design)
+
+For EACH question, create a markdown file with:
 
 1. **The prompt** — exactly as asked in the interview
 2. **Time budget** — how to spend 45 minutes on this question
@@ -224,7 +274,19 @@ For EACH system design question, create a markdown file with:
 8. **Common mistakes** — what weaker candidates do wrong
 9. **Connection to company's actual architecture** — reference their tech stack/blog posts
 
-### exercises/behavioral/
+#### API Design rounds (api_design)
+
+For EACH question, create a markdown file with:
+
+1. **The prompt** — the API to design
+2. **HTTP semantics to demonstrate** — PUT vs PATCH, status codes, idempotency headers
+3. **Resource modeling** — entities, relationships, URL structure
+4. **Request/response examples** — full JSON examples for each endpoint
+5. **Edge cases** — pagination, error responses, rate limiting, versioning
+6. **What interviewers look for** — consistency, RESTfulness, developer experience
+7. **Connection to company's actual API style** — reference their public API docs
+
+#### Behavioral rounds (behavioral, hiring_manager)
 
 Single file `behavioral_prep.md` with:
 
@@ -232,36 +294,39 @@ Single file `behavioral_prep.md` with:
 2. For each question: what the interviewer is really assessing
 3. STAR framework template for each theme
 4. Example of a strong vs. weak answer structure
-5. Company-specific angles to emphasize (e.g. ownership culture, data-driven decisions)
+5. Company-specific angles to emphasize (values, culture, operating principles)
+
+#### Other round types
+
+For rounds not listed above (pair_programming, take_home, presentation, domain-specific), create appropriate exercises based on what the research reveals about the format. Always include:
+1. What the round looks like (format, duration, tools)
+2. What is evaluated
+3. Practice exercises that simulate the actual round
+4. Tips from candidates who went through it
 
 ### exercises/README.md
 
-Index of all exercises:
+Index of all exercises, organized by interview round:
 
 ```markdown
 # Exercise Index
 
-## Coding Exercises
-| # | Name | Difficulty | Time Limit | Interview Round | Status |
-|---|------|-----------|------------|-----------------|--------|
-| 01 | {name} | Medium-Hard | 45 min | Round 1 Coding | [ ] |
-| 02 | {name} | Medium | 30 min | Round 2 Coding | [ ] |
+## Round 1: {Round Name} ({duration})
+| # | Name | Difficulty | Time Limit | Status |
+|---|------|-----------|------------|--------|
+| 01 | {name} | Medium | 45 min | [ ] |
 
-## System Design Exercises
-| # | Topic | Difficulty | Time Budget | Interview Round | Status |
-|---|-------|-----------|-------------|-----------------|--------|
-| 01 | {name} | Hard | 45 min | Round 3 SD | [ ] |
+## Round 2: {Round Name} ({duration})
+| # | Name | Difficulty | Time Limit | Status |
+|---|------|-----------|------------|--------|
+| 01 | {name} | Hard | 60 min | [ ] |
 
-## Behavioral Prep
-| Theme | Questions | Status |
-|-------|-----------|--------|
-| Ownership | 3 questions | [ ] |
-| Failure | 4 questions | [ ] |
+...
 
-## Recommended Order
-1. Start with coding exercises (easiest first)
-2. Move to system design
-3. Behavioral last (can prep in parallel)
+## Recommended Prep Order
+1. {Round with most exercises} — start here
+2. {Next priority round}
+3. ...
 ```
 
 ### README.md (root)
@@ -269,22 +334,24 @@ Index of all exercises:
 ```markdown
 # $0 $1 Interview Prep
 
+## Interview Rounds
+{List each round the company uses with a one-line description}
+
 ## What's Inside
 - `report.md` — Full research report with real questions from candidates
 - `plan.md` — Week-by-week study plan with time estimates
-- `exercises/` — Hands-on practice materials
+- `exercises/` — Hands-on practice for each interview round
 
 ## How to Use
-1. Read `report.md` to understand the interview process
+1. Read `report.md` to understand the full interview process
 2. Follow `plan.md` day by day
-3. For each coding exercise: solve it first, then check the solution
-4. Ask Claude to review your solution — it will suggest improvements,
-   clean code practices, test coverage, and what interviewers look for
-5. Track your progress with the checkboxes in `exercises/README.md`
+3. Work through exercises round by round
+4. For coding exercises: solve first, then check the solution
+5. Ask Claude to review your solution for feedback
+6. Track progress with checkboxes in `exercises/README.md`
 
 ## Practicing with Claude
-When you solve an exercise, share your solution and ask for feedback.
-Claude will:
+Share your solution and ask for feedback. Claude will:
 - Review code quality (naming, structure, readability)
 - Suggest missing test cases and edge cases
 - Point out complexity improvements
@@ -294,6 +361,7 @@ Claude will:
 
 ## Critical Rules
 
+- **ROUND-DRIVEN STRUCTURE**: Exercise folders and report sections must match the company's ACTUAL interview rounds — never force a generic coding/SD/behavioral split.
 - **SPECIFICITY OVER GENERALITY**: Real questions with sources, not generic advice.
 - **NEVER fabricate questions**. Only include questions actually found in sources.
 - **Always attribute**: every question should have a source link.
