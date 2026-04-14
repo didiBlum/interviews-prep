@@ -9,17 +9,21 @@ Generate a comprehensive interview preparation package for **$0** for the **$1**
 
 ## Step 1: Ask the User
 
-Ask the user via AskUserQuestion (up to 3 questions in one call):
+Ask the user via AskUserQuestion (up to 4 questions in one call):
 
 1. "What programming language are you most comfortable with?" — Options: Python, Java, JavaScript, Go (+ Other). Store as `{lang}`.
-2. "Would you like to tailor this to a specific country/location?" — Options: "No, keep it general", "Yes (please specify)" with Other for free text. Store as `{location}` or empty.
-3. "Do you have a specific job description you'd like to incorporate?" — Options: "No, use general research", "Yes, I'll paste it". If yes, wait for their paste and store as `{jd}`.
+2. "What's your target seniority level?" — Options: Junior, Mid, Senior, Staff+. Store as `{level}`. Use this to calibrate:
+   - **Junior/Mid**: Focus on coding fundamentals, straightforward system design, more hints in exercises.
+   - **Senior**: Full system design depth, production-quality code expectations, leadership behavioral questions.
+   - **Staff+**: Architecture and API design emphasis, cross-team influence behavioral questions, presentation round prep if applicable.
+3. "Would you like to tailor this to a specific country/location?" — Options: "No, keep it general", "Yes (please specify)" with Other for free text. Store as `{location}` or empty.
+4. "Do you have a specific job description you'd like to incorporate?" — Options: "No, use general research", "Yes, I'll paste it". If yes, wait for their paste and store as `{jd}`.
 
 **Wait for the user's answers before proceeding to Step 2.**
 
 ## Step 2: Research Phase — ALL 3 AGENTS IN PARALLEL
 
-**CRITICAL: Launch ALL 3 research agents in a SINGLE message (3 tool calls). They must be in one message for true parallelism.**
+**Prefer launching all 3 research agents in a SINGLE message for parallelism.** If one agent fails, retry it individually — don't re-run all three.
 
 Incorporate the user's answers into agent queries:
 - If `{location}` is provided, append it to ALL search queries (e.g., `$0 $1 interview questions glassdoor {location}`). This surfaces location-specific interview experiences, office culture, and regional process differences.
@@ -129,34 +133,60 @@ Common round types (use only what the research confirms):
 
 **Create exercises ONLY for rounds that the research confirms exist for this company + role.** If the company has a "Bug Bash" round, create debugging exercises. If they have an "Integration" round, create API integration exercises. Don't create system design exercises if the company doesn't have that round.
 
-**Thin data fallback**: If a round is confirmed but fewer than 2 specific questions were found for it, generate 2-3 high-probability exercises based on the company's tech stack and the typical industry standard for that round type. Mark these clearly as **"Estimated — based on {company}'s tech stack and typical {round_type} patterns"** so the user knows they aren't sourced from candidate reports.
+**Confidence grading** — tag every question and exercise with one of:
+- **High confidence**: confirmed by 2+ independent sources → use as-is
+- **Medium confidence**: single source → include, note it's from one report
+- **Low confidence**: no direct source, but round is confirmed → generate based on company tech stack and industry patterns, label as **"Estimated"**
 
-## Step 4: Generate Output Directory
+**Exercise cap**: Generate **2–3 exercises per round** by default. Pick the most representative/frequent questions. After presenting the report, tell the user they can ask for more exercises for any specific round.
 
-**Write order**: First write `report.md`, `plan.md`, `README.md`, and `exercises/README.md` in a single parallel batch — these are the "map" that must always be complete. Then write exercise files in batches of up to 3. This ensures the report and index are never truncated even if exercise generation requires multiple messages.
+**Seniority calibration**: Use `{level}` to adjust exercise content:
+- **Junior/Mid**: Simpler system design scope, more progressive hints, focus on correctness over optimization
+- **Senior**: Full production-quality expectations, distributed systems depth, ownership-focused behavioral questions
+- **Staff+**: Architecture-level system design, API design emphasis, cross-org influence behavioral questions, presentation prep if the company has that round
 
-Directory structure (round folders are DYNAMIC — based on Step 2):
+## Step 4: Generate Report (Phase 1)
+
+Write `report.md`, `plan.md`, and `README.md` in a single parallel batch. These are the core deliverable and must always be complete.
 
 ```
 reports/{company_snake_case}_{role_snake_case}/
 ├── README.md              # Overview + how to use this package
 ├── report.md              # Full interview prep report
 ├── plan.md                # Study plan with time estimates
-├── exercises/
-│   ├── README.md          # Exercise index with difficulty + recommended order
-│   ├── {round_slug_1}/    # e.g., practical_coding/
-│   │   ├── 01_problem_name.{ext}
-│   │   ├── 01_problem_name_solution.{ext}
-│   │   └── ...
-│   ├── {round_slug_2}/    # e.g., debugging/
-│   │   ├── 01_exercise_name.md
-│   │   └── ...
-│   ├── {round_slug_3}/    # e.g., system_design/
-│   │   ├── 01_topic_name.md
-│   │   └── ...
-│   └── {round_slug_N}/    # e.g., behavioral/
-│       └── behavioral_prep.md
 ```
+
+After writing, show the **TL;DR** section and a summary of identified rounds. Then ask the user:
+
+> "Report is ready. Want me to generate practice exercises? I'll create 2–3 per round. You can also pick specific rounds (e.g., 'just coding and system design')."
+
+If the user says yes (or specifies rounds), proceed to Step 5. If no, stop here.
+
+## Step 5: Generate Exercises (Phase 2 — on demand)
+
+Write `exercises/README.md` first, then exercise files in batches of up to 3.
+
+If the user specified particular rounds, only generate exercises for those. Otherwise generate for all confirmed rounds.
+
+```
+reports/{company_snake_case}_{role_snake_case}/
+└── exercises/
+    ├── README.md          # Exercise index with difficulty + recommended order
+    ├── {round_slug_1}/    # e.g., practical_coding/
+    │   ├── 01_problem_name.{ext}
+    │   ├── 01_problem_name_solution.{ext}
+    │   └── ...
+    ├── {round_slug_2}/    # e.g., debugging/
+    │   ├── 01_exercise_name.md
+    │   └── ...
+    ├── {round_slug_3}/    # e.g., system_design/
+    │   ├── 01_topic_name.md
+    │   └── ...
+    └── {round_slug_N}/    # e.g., behavioral/
+        └── behavioral_prep.md
+```
+
+After writing, tell the user exercises are ready and remind them they can ask for more exercises for any round.
 
 ### report.md
 
@@ -165,7 +195,7 @@ Full interview prep report with these sections:
 1. **TL;DR** — 3-4 sentences: stages, timeline, difficulty, the single most important thing to know.
 2. **Interview Process** — Table: Stage | Format | Duration | What to Expect. Include timeline, platform. This table should reflect the ACTUAL rounds this company uses — not a generic template.
 3. **Actual Questions Reported by Candidates** — The core section. Organize by the company's actual rounds (NOT by a fixed coding/SD/behavioral split). Each round gets its own subsection with:
-   - Table of specific questions (with source URL, date, difficulty)
+   - Table of specific questions (with source URL, date, difficulty, **confidence**: High/Medium/Low)
    - What this round evaluates
    - If few questions found for a round, say so honestly with count.
 4. **Topics & Patterns** — Per round: what skills, patterns, and knowledge areas are tested. Include anything unique to this company's process.
@@ -224,7 +254,7 @@ Time estimates per exercise type:
 
 #### Coding rounds (coding, practical_coding, online_assessment)
 
-For EACH specific question found, create an exercise file in `{lang}`:
+Pick the **2–3 most representative questions** for the round (prioritize high-confidence, recent, and frequently reported). Create an exercise file in `{lang}` for each:
 
 1. **Problem statement** as a docstring/comment — clear, self-contained (derived from real interview question)
 2. **Starter code** — function signature(s) with types, `# TODO` markers
@@ -272,7 +302,7 @@ For EACH confirmed integration scenario, create a markdown exercise:
 
 #### System Design rounds (system_design)
 
-For EACH question, create a markdown file with:
+Pick the **2–3 most representative questions**. For each, create a markdown file with:
 
 1. **The prompt** — exactly as asked in the interview
 2. **Time budget** — how to spend 45 minutes on this question
@@ -286,7 +316,7 @@ For EACH question, create a markdown file with:
 
 #### API Design rounds (api_design)
 
-For EACH question, create a markdown file with:
+Pick the **2–3 most representative questions**. For each, create a markdown file with:
 
 1. **The prompt** — the API to design
 2. **HTTP semantics to demonstrate** — PUT vs PATCH, status codes, idempotency headers
@@ -371,12 +401,14 @@ Share your solution and ask for feedback. Claude will:
 
 ## Critical Rules
 
+- **TWO PHASES**: Phase 1 delivers the report, plan, and README. Phase 2 (exercises) is on demand — always ask before generating.
 - **ROUND-DRIVEN STRUCTURE**: Exercise folders and report sections must match the company's ACTUAL interview rounds — never force a generic coding/SD/behavioral split.
-- **SPECIFICITY OVER GENERALITY**: Real questions with sources, not generic advice.
-- **NEVER fabricate questions**. Only include questions actually found in sources. Estimated exercises (from the thin-data fallback) must be clearly labeled.
+- **2–3 EXERCISES PER ROUND**: Don't generate exhaustive sets. Pick the most representative questions. User can ask for more.
+- **CONFIDENCE GRADING**: Tag every question as High / Medium / Low confidence. Low-confidence (estimated) exercises must be clearly labeled.
+- **SENIORITY CALIBRATION**: Adapt exercise depth, system design scope, and behavioral focus to the user's target level.
+- **Recency weighting**: Prioritize data from the last 18 months. If a question is older than 3 years, label it as **"Historical — {year}"** rather than listing it alongside current data.
 - **Always attribute**: every sourced question should have a source link.
-- **Recency weighting**: Prioritize data from the last 18 months. If a question is older than 3 years, label it as **"Historical — {year}"** rather than listing it alongside current data. Never treat a 2018 Glassdoor post the same as a 2025 one.
 - **Fetch aggressively**: real questions are in page content, not snippets.
-- **ALL 3 research agents MUST be launched in a SINGLE message** — this is what makes them parallel.
-- **Write order**: report + plan + READMEs first (one batch), then exercises in batches of up to 3. Never write all files in one message.
-- After saving all files, tell the user the report is ready and show only the **TL;DR** section from report.md. Do NOT re-output the full report.
+- **Prefer parallel agents**: launch all 3 in one message when possible, but don't fail if sequential execution is needed.
+- **Write order**: Phase 1 writes report + plan + README in one batch. Phase 2 writes exercises/README first, then exercise files in batches of up to 3.
+- After Phase 1, show the **TL;DR** and ask about exercises. Do NOT re-output the full report.
